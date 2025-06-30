@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      textarea {
+        width: 300px;
+        height: 60px;
+      }
+      li {
+        margin-bottom: 15px;
+      }
+      #shareSection,
+      #viewSection {
+        margin-top: 30px;
+      }
+      .doc-box {
+        border: 1px solid #aaa;
+        padding: 10px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Upload Documents</h2>
+    <input id="docTitle" placeholder="Document Title" /><br /><br />
+    <textarea id="docContent" placeholder="Document Content"></textarea
+    ><br /><br />
+    <input
+      id="docLink"
+      placeholder="Paste Google Drive or any File Link"
+    /><br /><br />
+    <button onclick="uploadDoc()">Upload</button>
+
+    <h3>Your Documents</h3>
+    <ul id="docList"></ul>
+
+    <div id="shareSection"></div>
+
+    <div id="viewSection">
+      <h3>View Shared Document</h3>
+      <input id="viewId" placeholder="Enter Document ID" />
+      <button onclick="viewSharedDoc()">View</button>
+      <div id="sharedDocDisplay"></div>
+    </div>
+
+    <script>
+      function generateId() {
+        return "doc" + Math.floor(Math.random() * 100000);
+      }
+
+      function uploadDoc() {
+        const title = document.getElementById("docTitle").value.trim();
+        const content = document.getElementById("docContent").value.trim();
+        const link = document.getElementById("docLink").value.trim();
+
+        if (!title || !content || !link) {
+          alert("Please fill all fields.");
+          return;
+        }
+
+        const docId = generateId();
+        const doc = { id: docId, title, content, link };
+        const docs = JSON.parse(localStorage.getItem("documents") || "[]");
+        docs.push(doc);
+        localStorage.setItem("documents", JSON.stringify(docs));
+        loadDocs();
+      }
+
+      function loadDocs() {
+        const docs = JSON.parse(localStorage.getItem("documents") || "[]");
+        const list = document.getElementById("docList");
+        list.innerHTML = "";
+
+        docs.forEach((doc) => {
+          list.innerHTML += `
+          <li class="doc-box">
+            <strong>${doc.title}</strong><br>
+            ${doc.content}<br>
+            <a href="${doc.link}" target="_blank">🔗 Open File</a><br><br>
+            <button onclick="deleteDoc('${doc.id}')">🗑️ Delete</button>
+            <button onclick="shareDoc('${doc.id}')">📤 Share</button>
+          </li>`;
+        });
+      }
+
+      function deleteDoc(id) {
+        let docs = JSON.parse(localStorage.getItem("documents") || "[]");
+        docs = docs.filter((doc) => doc.id !== id);
+        localStorage.setItem("documents", JSON.stringify(docs));
+        loadDocs();
+      }
+
+      function shareDoc(id) {
+        const shareLink = `Use this ID to view: ${id}`;
+        const shareSection = document.getElementById("shareSection");
+        shareSection.innerHTML = `<p><strong>✅ Share ID:</strong> ${id}<br>(Give this ID to someone. They can use the box below to view it.)</p>`;
+        navigator.clipboard.writeText(id);
+        alert("Share ID copied to clipboard: " + id);
+      }
+
+      function viewSharedDoc() {
+        const id = document.getElementById("viewId").value.trim();
+        const docs = JSON.parse(localStorage.getItem("documents") || "[]");
+        const doc = docs.find((d) => d.id === id);
+        const display = document.getElementById("sharedDocDisplay");
+
+        if (doc) {
+          display.innerHTML = `
+          <div class="doc-box">
+            <h4>${doc.title}</h4>
+            <p>${doc.content}</p>
+            <a href="${doc.link}" target="_blank">🔗 Open File</a>
+          </div>`;
+        } else {
+          display.innerHTML = `<p style="color:red;">❌ Document not found.</p>`;
+        }
+      }
+
+      // Load documents on page load
+      loadDocs();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Login</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      input {
+        margin: 5px;
+      }
+      .section {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 10px 0;
+      }
+      #otpSection {
+        display: none;
+      }
+      #finalLoginButton:disabled {
+        background-color: #ccc;
+        color: #666;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Login with Email</h2>
+    <div class="section">
+      <input id="email" type="email" placeholder="Email" /><br />
+      <input id="password" type="password" placeholder="Password" /><br />
+    </div>
+
+    <h2>Login with OTP</h2>
+    <div class="section">
+      <input id="phone" type="text" placeholder="+91XXXXXXXXXX" /><br />
+      <div id="recaptcha-container"></div>
+      <br />
+      <button onclick="sendOTP()">Send OTP</button><br /><br />
+
+      <div id="otpSection">
+        <input id="otp" type="text" placeholder="Enter OTP" /><br />
+        <button onclick="verifyOTP()">Verify OTP</button><br /><br />
+      </div>
+
+      <button id="finalLoginButton" onclick="goToDashboard()" disabled>
+        Login
+      </button>
+    </div>
+
+    <script>
+      // Email login
+      function loginWithEmail() {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        firebase
+          .auth()
+          .signInWithEmailAndPassword(email, password)
+          .then(() => {
+            alert("Login successful with Email");
+            window.location.href = "dashboard.html";
+          })
+          .catch((err) => alert(err.message));
+      }
+
+      // reCAPTCHA setup
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+        "recaptcha-container",
+        {
+          size: "normal",
+          callback: (response) => {
+            // reCAPTCHA solved
+          },
+          "expired-callback": () => {
+            alert("reCAPTCHA expired. Please try again.");
+          },
+        }
+      );
+      recaptchaVerifier.render();
+
+      let confirmationResult;
+
+      // Send OTP
+      function sendOTP() {
+        const phoneNumber = document.getElementById("phone").value;
+        firebase
+          .auth()
+          .signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier)
+          .then((result) => {
+            confirmationResult = result;
+            alert("OTP sent to your phone.");
+            document.getElementById("otpSection").style.display = "block";
+          })
+          .catch((error) => {
+            alert("Error: " + error.message);
+          });
+      }
+
+      // Verify OTP
+      function verifyOTP() {
+        const code = document.getElementById("otp").value;
+        if (!confirmationResult) {
+          alert("Please request OTP first.");
+          return;
+        }
+        confirmationResult
+          .confirm(code)
+          .then((result) => {
+            alert("OTP Verified Successfully.");
+            // Enable final login button
+            document.getElementById("finalLoginButton").disabled = false;
+          })
+          .catch((error) => {
+            alert("Invalid OTP. Please try again.");
+          });
+      }
+
+      // Login redirect after OTP verification
+      function goToDashboard() {
+        if (!document.getElementById("finalLoginButton").disabled) {
+          window.location.href = "dashboard.html";
+        }
+      }
+    </script>
+  </body>
+</html>
